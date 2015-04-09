@@ -29,35 +29,6 @@ while (($data = fgetcsv($file)) !== FALSE) {
             // echo $order->getStatus();die;
             if($order->getStatus() =='complete'){
             // echo 'entered ';echo $order->getStatus();die;
-                if ($order->canShip()) {
-                    try {
-                        $shipment = Mage::getModel('sales/service_order', $order)
-                                        ->prepareShipment(getItemQtys($order));
-                        $arrTracking = array(
-                            'carrier_code' => $data[1],
-                            'title' => $data[2],
-                            'number' => $data[3],
-                        );
-             
-                        $track = Mage::getModel('sales/order_shipment_track')->addData($arrTracking);
-                        $shipment->addTrack($track);
-                        $shipment->register();
-                        $order->addStatusHistoryComment($customerEmailComments, true);
-                        saveShipment($shipment, $order, $customerEmailComments);
-                        if($shipment){
-                                if(!$shipment->getEmailSent()){
-                                    $shipment->sendEmail(true);
-                                    $shipment->setEmailSent(true);
-                                    $shipment->save();                          
-                                }
-                            }   
-                             
-                        saveOrder($order);
-                    } catch (Exception $e) {
-                        throw $e;
-                    }
-                    
-                }
             }
         echo $data[0].' is updated.<br>';
     }
@@ -66,36 +37,7 @@ while (($data = fgetcsv($file)) !== FALSE) {
     fclose($file);
 //echo $row;
 echo "$row Updated. Import finished.";
-function getItemQtys(Mage_Sales_Model_Order $order)
-{
-    $qty = array();
- 
-    foreach ($order->getAllItems() as $_eachItem) {
-        if ($_eachItem->getParentItemId()) {
-            $qty[$_eachItem->getParentItemId()] = $_eachItem->getQtyOrdered();
-        } else {
-            $qty[$_eachItem->getId()] = $_eachItem->getQtyOrdered();
-        }
-    }
- 
-    return $qty;
-}
-function saveShipment(Mage_Sales_Model_Order_Shipment $shipment, Mage_Sales_Model_Order $order, $customerEmailComments = '')
-{
-    $shipment->getOrder()->setIsInProcess(true);
-    $transactionSave = Mage::getModel('core/resource_transaction')
-                           ->addObject($shipment)
-                           ->addObject($order)
-                           ->save();
- 
-    $emailSentStatus = $shipment->getData('email_sent');
-    if (!is_null($customerEmail) && !$emailSentStatus) {
-        $shipment->sendEmail(true, $customerEmailComments);
-        $shipment->setEmailSent(true);
-    }
- 
-    return $this;
-}
+
 function saveOrder(Mage_Sales_Model_Order $order)
 {
     $order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
@@ -105,4 +47,3 @@ function saveOrder(Mage_Sales_Model_Order $order)
  
     return $this;
 }
-?>
