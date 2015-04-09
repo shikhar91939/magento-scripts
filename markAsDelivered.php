@@ -18,6 +18,7 @@ while (($data = fgetcsv($file)) !== FALSE) {
 //print_r($data);
     if($row != 1)
     {
+        try{
         //echo $data[0];die;
         $customerEmailComments = $data[1];
          $order = Mage::getModel('sales/order')
@@ -27,23 +28,23 @@ while (($data = fgetcsv($file)) !== FALSE) {
                 Mage::throwException("Order does not exist");
             // echo $data[0];
             // echo $order->getStatus();die;
-            if($order->getStatus() =='complete'){
-            // echo 'entered ';echo $order->getStatus();die;
+            if($order->getStatus() =='complete'){// now marking as delivered...
+                // echo 'entered ';echo $order->getStatus();die;
+
+
+                // $order->setStatus('Delivered');
+                // $order->setData('status', 'Delivered');
+                $order->addStatusToHistory('delivered', $customerEmailComments, false);
+                $order->save();
             }
         echo $data[0].' is updated.<br>';
+        }catch (Exception $e) {
+            throw $e;
+        }
     }
     $row++;
 }
     fclose($file);
 //echo $row;
 echo "$row Updated. Import finished.";
-
-function saveOrder(Mage_Sales_Model_Order $order)
-{
-    $order->setData('state', Mage_Sales_Model_Order::STATE_COMPLETE);
-    $order->setData('status', Mage_Sales_Model_Order::STATE_COMPLETE);
- 
-    $order->save();
- 
-    return $this;
-}
+    
