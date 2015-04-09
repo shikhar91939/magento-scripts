@@ -16,54 +16,54 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 while (($data = fgetcsv($file)) !== FALSE) { 
 //print_r($data);
-	if($row != 1)
-	{
-//echo $data[0];die;
-$customerEmailComments = $data[4];
- $order = Mage::getModel('sales/order')
-                 ->loadByIncrementId($data[0]);
- 
-    if (!$order->getId()) {
-        Mage::throwException("Order does not exist, for the Shipment process to complete");
-    }
-	//echo $data[0];
-	//echo $order->getStatus();die;
- if($order->getStatus()!='pick_pack' && $order->getStatus() != 'readytoship'){continue;}
- //echo $order->getStatus();die;
-    if ($order->canShip()) {
-        try {
-            $shipment = Mage::getModel('sales/service_order', $order)
-                            ->prepareShipment(getItemQtys($order));
-            $arrTracking = array(
-                'carrier_code' => $data[1],
-                'title' => $data[2],
-                'number' => $data[3],
-            );
- 
-            $track = Mage::getModel('sales/order_shipment_track')->addData($arrTracking);
-            $shipment->addTrack($track);
-            $shipment->register();
-			$order->addStatusHistoryComment($customerEmailComments, true);
-            saveShipment($shipment, $order, $customerEmailComments);
-			if($shipment){
-                    if(!$shipment->getEmailSent()){
-                        $shipment->sendEmail(true);
-                        $shipment->setEmailSent(true);
-                        $shipment->save();                          
+    if($row != 1)
+    {
+        //echo $data[0];die;
+        $customerEmailComments = $data[1];
+         $order = Mage::getModel('sales/order')
+                         ->loadByIncrementId($data[0]);
+         
+            if (!$order->getId())
+                Mage::throwException("Order does not exist");
+            // echo $data[0];
+            // echo $order->getStatus();die;
+            if($order->getStatus() =='complete'){
+            // echo 'entered ';echo $order->getStatus();die;
+                if ($order->canShip()) {
+                    try {
+                        $shipment = Mage::getModel('sales/service_order', $order)
+                                        ->prepareShipment(getItemQtys($order));
+                        $arrTracking = array(
+                            'carrier_code' => $data[1],
+                            'title' => $data[2],
+                            'number' => $data[3],
+                        );
+             
+                        $track = Mage::getModel('sales/order_shipment_track')->addData($arrTracking);
+                        $shipment->addTrack($track);
+                        $shipment->register();
+                        $order->addStatusHistoryComment($customerEmailComments, true);
+                        saveShipment($shipment, $order, $customerEmailComments);
+                        if($shipment){
+                                if(!$shipment->getEmailSent()){
+                                    $shipment->sendEmail(true);
+                                    $shipment->setEmailSent(true);
+                                    $shipment->save();                          
+                                }
+                            }   
+                             
+                        saveOrder($order);
+                    } catch (Exception $e) {
+                        throw $e;
                     }
-                }   
-				 
-            saveOrder($order);
-        } catch (Exception $e) {
-            throw $e;
-        }
-		
+                    
+                }
+            }
+        echo $data[0].' is updated.<br>';
     }
-echo $data[0].' is updated.<br>';
-	}
-	$row++;
-	}
-	fclose($file);
+    $row++;
+}
+    fclose($file);
 //echo $row;
 echo "$row Updated. Import finished.";
 function getItemQtys(Mage_Sales_Model_Order $order)
